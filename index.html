@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold mb-6 text-center">Certificate Generator</h1>
+        
+        <div class="mb-4">
+            <label for="certificateImage" class="block text-sm font-medium text-gray-700">Upload Certificate Image</label>
+            <input type="file" id="certificateImage" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        </div>
+
+        <div class="mb-4">
+            <label for="userName" class="block text-sm font-medium text-gray-700">Enter Your Name</label>
+            <input type="text" id="userName" placeholder="Your Name" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div class="mb-6">
+            <canvas id="certificateCanvas" class="w-full border border-gray-300 hidden"></canvas>
+        </div>
+
+        <button id="generateBtn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-400" disabled>Generate Certificate</button>
+        <button id="downloadBtn" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 text-center mt-4 hidden">Download Certificate</button>
+    </div>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+        const certificateImage = document.getElementById('certificateImage');
+        const userName = document.getElementById('userName');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const canvas = document.getElementById('certificateCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let uploadedImage = null;
+
+        // Enable generate button when both image and name are provided
+        function checkInputs() {
+            generateBtn.disabled = !(certificateImage.files.length > 0 && userName.value.trim());
+        }
+
+        certificateImage.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedImage = new Image();
+                    uploadedImage.onload = () => {
+                        canvas.width = uploadedImage.width;
+                        canvas.height = uploadedImage.height;
+                        canvas.classList.remove('hidden');
+                    };
+                    uploadedImage.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            checkInputs();
+        });
+
+        userName.addEventListener('input', checkInputs);
+
+        generateBtn.addEventListener('click', () => {
+            if (!uploadedImage) return;
+
+            // Draw the image on the canvas
+            ctx.drawImage(uploadedImage, 0, 0);
+
+            // Add the user's name to the canvas at the top
+            ctx.font = 'bold 30px Arial';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.fillText(userName.value.trim(), canvas.width / 2, 440);
+
+            // Show download button
+            downloadBtn.classList.remove('hidden');
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save('certificate.pdf');
+        });
+    </script>
+</body>
+</html>
